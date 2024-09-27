@@ -1,0 +1,267 @@
+''' Starter code for n-gram language modeling assignment.
+
+    Original version written by Jack Hessel
+    Modified for CS322.00.f24 by Eric Alexander
+'''
+import argparse
+import nltk
+import collections
+import math
+import tqdm
+
+
+global _TOKENIZER
+_TOKENIZER = nltk.tokenize.casual.TweetTokenizer(
+    preserve_case=False)
+
+
+def parse_args():
+    ''' Code for parsing the command-line arguments.
+        If provided with no arguments, this will automatically
+        train a model on movies_train.toks and test it on 
+        movies_val.toks, with a smoothing factor of .01 and
+        a maximum vocab size of 1250. 
+    '''
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--train_tokens',
+                        default='movies_train.toks',
+                        help='path to training tokens file')
+    parser.add_argument('--val_tokens',
+                        default='movies_val.toks',
+                        help='path to validation tokens file')
+    parser.add_argument('--max_vocab_size',
+                        default=1250,
+                        type=int,
+                        help='vocab consists of at most this many of the most-common words')
+    parser.add_argument('--smoothing_factor',
+                        default=.01,
+                        type=float,
+                        help='Smoothing factor for add-k smoothing')
+    return parser.parse_args()
+
+
+def tokenize(string):
+    ''' Given a string, consisting of potentially many sentences, returns a lower-cased, tokenized version of that string.
+    '''
+    global _TOKENIZER
+    return _TOKENIZER.tokenize(string)
+
+
+def load_lines_corpus(fname, limit=None):
+    ''' Loads the corpus to a list of token lists, ignoring blank lines. '''
+    lines = []
+    with open(fname) as f:
+        for line in tqdm.tqdm(f):
+            if len(line.strip()) == 0: continue
+            lines.append(tokenize(line))
+            if limit and len(lines) >= limit: break
+    print('Loaded {} lines.'.format(len(lines)))
+    return lines
+    
+
+def count_unigrams(token_lists):
+    ''' Given a list of token lists, return a dictionary mapping word types to their corpus-level counts. For example, if token_lists is:
+    [[A, B, B, A],
+     [B, C]]
+
+    Then the output would be:
+    {A:2, B:3, C:1, </s>:2}
+    '''
+    raise NotImplementedError('TODO')
+   
+
+def unigram_distribution(token_lists,
+                         vocabulary,
+                         smoothing_factor=.01):
+    ''' Given a list of token lists and a set of unigrams constituting the vocabulary return a dictionary mapping from history tuples to a dictionary containing counts of the following word. For example, if vocab={A,B,C,</s>,<UNK>}, and the input corpus is:
+
+    [[A, B, B, A],
+     [B, C],
+     [D]]
+
+    we assume outputs are padded:
+
+    [A, B, B, A, </s>]
+    [B, C, </s>]
+    [D, </s>]
+    
+    Then, the output would be:
+    {A: (2 + smoothing_factor) / N,
+     B: (3 + smoothing_factor) / N,
+     C: (1 + smoothing_factor) / N,
+     <UNK>: (1 + smoothing_factor) / N,
+     </s>: (3 + smoothing_factor) / N,
+    }
+    where N is a normalizing factor that causes the sum of the values in the output dictionary to be 1. Note that <s> has probability zero of being the next word, thus, for our unigram model, we assign it probability zero.
+    '''
+    raise NotImplementedError('TODO')
+
+
+def compute_perplexity_unigrams(tokens,
+                                unigram_dist,
+                                vocabulary):
+    ''' Computes the perplexity of a list of input tokens according to the unigram lanuage model (unigram_dist is the output of the function unigram_distribution).
+
+    If the input tokens are:
+
+    [A, B, C, D]
+
+    with vocab = {A, B, C, </s>, <UNK>}
+
+    [A, B, C, <UNK>, </s>]
+
+    Start computing the P(w_i) at the first non-padding character, and end by computing P(</s>). should be modeled as:
+
+    P(A) * P(B) * P(C) * P(<UNK>) * P(</s>)
+
+    when we take a log of this expression, we get
+
+    log(P(A)) + log(P(B)) + log(P(C)) + log(P(<UNK>)) + log(P(</s>))
+
+    Finally, once you have the summed log probability, use the equation relating probability and perplexity in the reading to compute your final perplexity value!
+    '''
+    raise NotImplementedError('TODO')
+
+
+def build_table(token_lists, vocabulary, history):
+    ''' Given a list of token lists and a set of unigrams constituting the vocabulary return a dictionary mapping from history tuples to a dictionary containing counts of the following word. For example, if vocab={A,B,C,</s>,<UNK>}, and history=2, the input corpus is:
+
+    [A, B, B, A]
+    [B, C]
+    [D]
+
+    We first pad the inputs and remove unknown vocab items
+
+    [<s>, <s>, A, B, B, A, </s>]
+    [<s>, <s>, B, C, </s>]
+    [<s>, <s>, <UNK>, </s>]
+    
+    Then, part of the nested output dictionary would be:
+    {
+     (<s>, <s>): {A:1, B:1, <UNK>:1},
+     (<s>, A,): {B:1},
+     ...
+     (<s>, <UNK>,):{</s>:1},
+     ...
+    }
+
+    '''
+    assert history >= 1, 'We only handle nonzero+ histories.'
+    raise NotImplementedError('TODO')
+
+
+def compute_log_probability(tokens,
+                            counts,
+                            vocabulary,
+                            history,
+                            smoothing_factor=.01):
+    ''' Return the logged joint probability log(P(w1, w2, w3 ...))
+    Smoothing should be applied according to the smoothing_factor parameter, which is a pseudocount assumed to be applied to all 
+
+    args:
+        tokens: a list of tokens
+        counts: a nested dictionary mapping {context -> {next_word: count}}.
+                this is the output of build_table
+        vocabulary: a set of wordtypes that we are considering in our vocab
+    returns:
+        log_probability: the logged probability of P(w1, w2, w3 ... </s>)
+        n: the number of words in the input that we predicted
+    
+    If the input tokens are:
+
+    [A, B, C, D]
+
+    with vocab = {A, B, C, </s>, <UNK>}
+
+    and history is 2, we first pad the strings and remove unknown vocab items:
+
+    [<s>, <s>, A, B, C, <UNK>, </s>]
+
+    Start computing the P(w_i | history) at the first non-padding character, and end by computing P(</s> | history). For instance, the second sequence's probability, with history = 2, should be modeled as:
+
+    P(A | <s>, <s>) * P(B | A, <s>) ... P(</s> | <UNK>, C)
+
+    when we take a log of this value, we get
+
+    log( P(A | <s>, <s>) * P(B | A, <s>) ... P(</s> | <UNK>, C) )
+    = log( P(A | <s>, <s>) ) + log( P(B | A, <s>) ) ... + log( P(</s> | <UNK>, C) )
+
+    and we would return 5 as the number of tokens because we attempted to predict A, B, C, <UNK> and </s>.
+    '''
+    raise NotImplementedError('TODO')
+
+
+def compute_perplexity(tokens,
+                       counts_table,
+                       vocabulary,
+                       history,
+                       smoothing_factor=.01):
+    ''' Computes the perplexity of a list of input tokens according to the n-gram lanuage model parameterized by counts_table.
+
+    This function should be short!! Please call compute_log_probability in this function! My solution calls compute_log_probability, and, based on the output of that function, returns the perplexity in 1-3 lines.
+    '''
+    raise NotImplementedError('TODO')
+
+
+
+def sample_model(counts_table,
+                 vocabulary,
+                 history,
+                 smoothing_factor=.01,
+                 max_tokens=100):
+    ''' Returns a string generated by repeatedly sampling from the n-gram model contained in the given counts_table. Note that you will need to start the sampling process with a buffer of however many <s> tokens are required to satisfy the given history. If the sampling reaches max_tokens, the sample should end.
+    '''
+    raise NotImplementedError('TODO')
+
+
+def main():
+    args = parse_args()
+
+    # The limit parameter limits the number of lines that are loaded.
+    # You should remove the limit once you want to test your code on
+    # the full dataset. The limit parameter is to help you debug, because
+    # it does take around 30 seconds on my machine to load the whole
+    # training corpus.
+    train_lines = load_lines_corpus(args.train_tokens, limit=1000)
+    val_lines = load_lines_corpus(args.val_tokens, limit=1000)
+    
+    # count the unigrams
+    unigram_counts = count_unigrams(train_lines)
+    valid_vocab = set(['<UNK>', '</s>'])
+    for u, c in sorted(unigram_counts.items(), key=lambda x: -x[1]):
+        valid_vocab.add(u)
+        if len(valid_vocab) >= args.max_vocab_size:
+            break
+
+    print('Of the original {} types, {} are in the final vocab'.format(
+        len(unigram_counts),
+        len(valid_vocab)))
+
+    # make a smoothed unigram distribution.
+    unigram_dist = unigram_distribution(train_lines,
+                                        valid_vocab,
+                                        smoothing_factor=args.smoothing_factor)
+    
+    ### Compute perplexities for unigram-only model
+    per_line_perplexities = []
+    for t in tqdm.tqdm(val_lines):
+        perplexity = compute_perplexity_unigrams(t,
+                                                 unigram_dist,
+                                                 valid_vocab)
+        per_line_perplexities.append(perplexity)
+
+    print('Average per-line perplexity for unigram LM: {:.2f}'.format(
+        sum(per_line_perplexities) / len(per_line_perplexities)))
+    
+
+    for h in [1,2,3,4]:
+        # here, you should create count dictionaries for each history
+        # value h \in [1,2,3,4]. For each value of h, you should loop
+        # over each line in the validation corpus, and compute its
+        # perplexity. Finally -- print out the average, per-line validation
+        # perplexity of each language model!
+        raise NotImplementedError('TODO')
+            
+    
+if __name__ == '__main__':
+    main()
