@@ -67,13 +67,23 @@ def count_unigrams(token_lists):
     Then the output would be:
     {A:2, B:3, C:1, </s>:2}
     '''
-    raise NotImplementedError('TODO')
+
+    unigram_count = {}
+    for list in token_lists:
+        for token in list:
+            val = unigram_count.setdefault(token, 0)
+            unigram_count.update({token: val+1})
+
+        val = unigram_count.setdefault("</s>", 0)
+        unigram_count.update({"</s>": val+1})
+
+    return unigram_count
    
 
 def unigram_distribution(token_lists,
                          vocabulary,
                          smoothing_factor=.01):
-    ''' Given a list of token lists and a set of unigrams constituting the vocabulary return a dictionary mapping from history tuples to a dictionary containing counts of the following word. For example, if vocab={A,B,C,</s>,<UNK>}, and the input corpus is:
+    ''' Given a list of token lists and a set of unigrams constituting the vocabulary, return a dictionary mapping from history tuples to a dictionary containing counts of the following word. For example, if vocab={A,B,C,</s>,<UNK>}, and the input corpus is:
 
     [[A, B, B, A],
      [B, C],
@@ -94,13 +104,36 @@ def unigram_distribution(token_lists,
     }
     where N is a normalizing factor that causes the sum of the values in the output dictionary to be 1. Note that <s> has probability zero of being the next word, thus, for our unigram model, we assign it probability zero.
     '''
-    raise NotImplementedError('TODO')
+
+    unigram_dist = {"<UNK>": 0}
+    for list in token_lists:
+        for token in list:
+            if token in vocabulary:
+                val = unigram_dist.setdefault(token, 0)
+                unigram_dist.update({token: val+1})
+            else:
+                val = unigram_dist.get("<UNK>")
+                unigram_dist.update({"<UNK>": val+1})
+
+        val = unigram_dist.setdefault("</s>", 0)
+        unigram_dist.update({"</s>": val+1})
+
+    N = 0
+
+    for token, count in unigram_dist.items():
+        unigram_dist.update({token: count+smoothing_factor})
+        N += count+smoothing_factor
+    
+    for token, count in unigram_dist.items():
+        unigram_dist.update({token: count/N})
+
+    return unigram_dist
 
 
 def compute_perplexity_unigrams(tokens,
                                 unigram_dist,
                                 vocabulary):
-    ''' Computes the perplexity of a list of input tokens according to the unigram lanuage model (unigram_dist is the output of the function unigram_distribution).
+    ''' Computes the perplexity of a list of input tokens according to the unigram language model (unigram_dist is the output of the function unigram_distribution).
 
     If the input tokens are:
 
@@ -120,7 +153,21 @@ def compute_perplexity_unigrams(tokens,
 
     Finally, once you have the summed log probability, use the equation relating probability and perplexity in the reading to compute your final perplexity value!
     '''
-    raise NotImplementedError('TODO')
+
+    sum_prob = 0
+
+    for token in tokens:
+        if token not in vocabulary:
+            sum_prob += math.log(unigram_dist.get("<UNK>"))
+        else:
+            sum_prob += math.log(unigram_dist.get(token))
+
+    sum_prob += math.log(unigram_dist.get("</s>"))
+
+    # add one for </s> token
+    exp = -1/(len(tokens) + 1)
+
+    return pow(sum_prob, exp)
 
 
 def build_table(token_lists, vocabulary, history):
@@ -222,8 +269,8 @@ def main():
     # the full dataset. The limit parameter is to help you debug, because
     # it does take around 30 seconds on my machine to load the whole
     # training corpus.
-    train_lines = load_lines_corpus(args.train_tokens, limit=1000)
-    val_lines = load_lines_corpus(args.val_tokens, limit=1000)
+    train_lines = load_lines_corpus(args.train_tokens, limit=900)
+    val_lines = load_lines_corpus(args.val_tokens, limit=900)
     
     # count the unigrams
     unigram_counts = count_unigrams(train_lines)
