@@ -154,20 +154,23 @@ def compute_perplexity_unigrams(tokens,
     Finally, once you have the summed log probability, use the equation relating probability and perplexity in the reading to compute your final perplexity value!
     '''
 
-    sum_prob = 0
+    sum_logProb = 0
+
+    # add one for </s> token
+    NthRoot = -1/(len(tokens) + 1)
 
     for token in tokens:
         if token not in vocabulary:
-            sum_prob += math.log(unigram_dist.get("<UNK>"))
+            sum_logProb += math.log(unigram_dist.get("<UNK>"))
         else:
-            sum_prob += math.log(unigram_dist.get(token))
+            sum_logProb += math.log(unigram_dist.get(token))
 
-    sum_prob += math.log(unigram_dist.get("</s>"))
+    sum_logProb += math.log(unigram_dist.get("</s>"))
 
-    # add one for </s> token
-    exp = -1/(len(tokens) + 1)
+    # compute perplexity on logProb instead of normal probability to prevent underflow
+    sum_logProb = NthRoot * sum_logProb
 
-    return pow(sum_prob, exp)
+    return math.exp(sum_logProb)
 
 
 def build_table(token_lists, vocabulary, history):
@@ -269,8 +272,8 @@ def main():
     # the full dataset. The limit parameter is to help you debug, because
     # it does take around 30 seconds on my machine to load the whole
     # training corpus.
-    train_lines = load_lines_corpus(args.train_tokens, limit=900)
-    val_lines = load_lines_corpus(args.val_tokens, limit=900)
+    train_lines = load_lines_corpus(args.train_tokens, limit=10000)
+    val_lines = load_lines_corpus(args.val_tokens, limit=1000)
     
     # count the unigrams
     unigram_counts = count_unigrams(train_lines)
@@ -289,7 +292,14 @@ def main():
                                         valid_vocab,
                                         smoothing_factor=args.smoothing_factor)
     
-    ### Compute perplexities for unigram-only model
+    # print(unigram_dist)
+    # print("---")
+    # sum = 0
+    # for token, prob in unigram_dist.items():
+    #     sum += prob
+    # print("The sum is", sum)
+
+    ## Compute perplexities for unigram-only model
     per_line_perplexities = []
     for t in tqdm.tqdm(val_lines):
         perplexity = compute_perplexity_unigrams(t,
@@ -301,13 +311,13 @@ def main():
         sum(per_line_perplexities) / len(per_line_perplexities)))
     
 
-    for h in [1,2,3,4]:
-        # here, you should create count dictionaries for each history
-        # value h \in [1,2,3,4]. For each value of h, you should loop
-        # over each line in the validation corpus, and compute its
-        # perplexity. Finally -- print out the average, per-line validation
-        # perplexity of each language model!
-        raise NotImplementedError('TODO')
+    # for h in [1,2,3,4]:
+    #     # here, you should create count dictionaries for each history
+    #     # value h \in [1,2,3,4]. For each value of h, you should loop
+    #     # over each line in the validation corpus, and compute its
+    #     # perplexity. Finally -- print out the average, per-line validation
+    #     # perplexity of each language model!
+    #     raise NotImplementedError('TODO')
             
     
 if __name__ == '__main__':
