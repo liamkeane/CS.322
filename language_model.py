@@ -5,7 +5,7 @@
 '''
 import argparse
 import nltk
-import collections
+from collections import defaultdict
 import math
 import tqdm
 
@@ -154,27 +154,27 @@ def compute_perplexity_unigrams(tokens,
     Finally, once you have the summed log probability, use the equation relating probability and perplexity in the reading to compute your final perplexity value!
     '''
 
-    sum_logProb = 0
+    sum_log_prob = 0
 
     # add one for </s> token
-    NthRoot = -1/(len(tokens) + 1)
+    Nth_root = -1/(len(tokens) + 1)
 
     for token in tokens:
         if token not in vocabulary:
-            sum_logProb += math.log(unigram_dist.get("<UNK>"))
+            sum_log_prob += math.log(unigram_dist.get("<UNK>"))
         else:
-            sum_logProb += math.log(unigram_dist.get(token))
+            sum_log_prob += math.log(unigram_dist.get(token))
 
-    sum_logProb += math.log(unigram_dist.get("</s>"))
+    sum_log_prob += math.log(unigram_dist.get("</s>"))
 
     # compute perplexity on logProb instead of normal probability to prevent underflow
-    sum_logProb = NthRoot * sum_logProb
+    sum_log_prob = Nth_root * sum_log_prob
 
-    return math.exp(sum_logProb)
+    return math.exp(sum_log_prob)
 
 
 def build_table(token_lists, vocabulary, history):
-    ''' Given a list of token lists and a set of unigrams constituting the vocabulary return a dictionary mapping from history tuples to a dictionary containing counts of the following word. For example, if vocab={A,B,C,</s>,<UNK>}, and history=2, the input corpus is:
+    ''' Given a list of token lists and a set of unigrams constituting the vocabulary, return a dictionary mapping from history tuples to a dictionary containing counts of the following word. For example, if vocab={A,B,C,</s>,<UNK>}, and history=2, the input corpus is:
 
     [A, B, B, A]
     [B, C]
@@ -189,16 +189,34 @@ def build_table(token_lists, vocabulary, history):
     Then, part of the nested output dictionary would be:
     {
      (<s>, <s>): {A:1, B:1, <UNK>:1},
-     (<s>, A,): {B:1},
+     (<s>, A): {B:1},
      ...
-     (<s>, <UNK>,):{</s>:1},
+     (<s>, <UNK>):{</s>:1},
      ...
     }
 
     '''
     assert history >= 1, 'We only handle nonzero+ histories.'
-    raise NotImplementedError('TODO')
 
+    for list in token_lists:
+        for i in range(history):
+            list.insert(0, "<s>")
+        for index, token in enumerate(list):
+            if token not in vocabulary:
+                list[index] = "<UNK>"
+        list.append("</s>")
+
+    history_mapping = {}
+
+    for list in token_lists:
+        for i in range(len(list) - history):
+            new_tuple = tuple(list[i:i+history])
+            dd = history_mapping.setdefault(new_tuple, defaultdict(int))
+            dd[list[i+history]] += 1
+            history_mapping.update({new_tuple: dd})
+    
+    return history_mapping
+    
 
 def compute_log_probability(tokens,
                             counts,
@@ -272,12 +290,13 @@ def main():
     # the full dataset. The limit parameter is to help you debug, because
     # it does take around 30 seconds on my machine to load the whole
     # training corpus.
-    train_lines = load_lines_corpus(args.train_tokens, limit=10000)
+    train_lines = load_lines_corpus("test.toks", limit=1000)
+    # train_lines = load_lines_corpus(args.train_tokens, limit=1)
     val_lines = load_lines_corpus(args.val_tokens, limit=1000)
     
     # count the unigrams
     unigram_counts = count_unigrams(train_lines)
-    valid_vocab = set(['<UNK>', '</s>'])
+    valid_vocab = set(['<UNK>', '</s>', '<s>'])
     for u, c in sorted(unigram_counts.items(), key=lambda x: -x[1]):
         valid_vocab.add(u)
         if len(valid_vocab) >= args.max_vocab_size:
@@ -287,37 +306,32 @@ def main():
         len(unigram_counts),
         len(valid_vocab)))
 
-    # make a smoothed unigram distribution.
-    unigram_dist = unigram_distribution(train_lines,
-                                        valid_vocab,
-                                        smoothing_factor=args.smoothing_factor)
-    
-    # print(unigram_dist)
-    # print("---")
-    # sum = 0
-    # for token, prob in unigram_dist.items():
-    #     sum += prob
-    # print("The sum is", sum)
+    # # make a smoothed unigram distribution.
+    # unigram_dist = unigram_distribution(train_lines,
+    #                                     valid_vocab,
+    #                                     smoothing_factor=args.smoothing_factor)
 
-    ## Compute perplexities for unigram-only model
-    per_line_perplexities = []
-    for t in tqdm.tqdm(val_lines):
-        perplexity = compute_perplexity_unigrams(t,
-                                                 unigram_dist,
-                                                 valid_vocab)
-        per_line_perplexities.append(perplexity)
+    # ## Compute perplexities for unigram-only model
+    # per_line_perplexities = []
+    # for t in tqdm.tqdm(val_lines):
+    #     perplexity = compute_perplexity_unigrams(t,
+    #                                              unigram_dist,
+    #                                              valid_vocab)
+    #     per_line_perplexities.append(perplexity)
 
-    print('Average per-line perplexity for unigram LM: {:.2f}'.format(
-        sum(per_line_perplexities) / len(per_line_perplexities)))
+    # print('Average per-line perplexity for unigram LM: {:.2f}'.format(
+    #     sum(per_line_perplexities) / len(per_line_perplexities)))
     
 
-    # for h in [1,2,3,4]:
-    #     # here, you should create count dictionaries for each history
-    #     # value h \in [1,2,3,4]. For each value of h, you should loop
-    #     # over each line in the validation corpus, and compute its
-    #     # perplexity. Finally -- print out the average, per-line validation
-    #     # perplexity of each language model!
-    #     raise NotImplementedError('TODO')
+    for h in [1,2,3,4]:
+        print(build_table(train_lines, valid_vocab, h))
+        print("\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n")
+        # here, you should create count dictionaries for each history
+        # value h \in [1,2,3,4]. For each value of h, you should loop
+        # over each line in the validation corpus, and compute its
+        # perplexity. Finally -- print out the average, per-line validation
+        # perplexity of each language model!
+        # raise NotImplementedError('TODO')
             
     
 if __name__ == '__main__':
