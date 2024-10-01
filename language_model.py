@@ -8,6 +8,7 @@ import nltk
 from collections import defaultdict
 import math
 import tqdm
+import copy
 
 
 global _TOKENIZER
@@ -198,17 +199,24 @@ def build_table(token_lists, vocabulary, history):
     '''
     assert history >= 1, 'We only handle nonzero+ histories.'
 
-    for list in token_lists:
+    '''Pad the inputs and remove unknown vocab items'''
+
+    padded_token_list = copy.deepcopy(token_lists)
+    for list in padded_token_list:
         for i in range(history):
             list.insert(0, "<s>")
+
         for index, token in enumerate(list):
             if token not in vocabulary:
                 list[index] = "<UNK>"
+
         list.append("</s>")
 
-    history_mapping = {}
 
-    for list in token_lists:
+    '''Construct nested output dictionary'''
+
+    history_mapping = {}
+    for list in padded_token_list:
         for i in range(len(list) - history):
             new_tuple = tuple(list[i:i+history])
             dd = history_mapping.setdefault(new_tuple, defaultdict(int))
@@ -322,10 +330,10 @@ def main():
     # print('Average per-line perplexity for unigram LM: {:.2f}'.format(
     #     sum(per_line_perplexities) / len(per_line_perplexities)))
     
-
+    print("\n ------ \n")
     for h in [1,2,3,4]:
         print(build_table(train_lines, valid_vocab, h))
-        print("\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n")
+        print("\n ------ \n")
         # here, you should create count dictionaries for each history
         # value h \in [1,2,3,4]. For each value of h, you should loop
         # over each line in the validation corpus, and compute its
