@@ -2,6 +2,8 @@
 
     Original version written by Jack Hessel
     Modified for CS322.00.f24 by Eric Alexander
+
+    Assignment completed by: Liam Keane and Lazuli Kleinhans
 '''
 import argparse
 import nltk
@@ -215,15 +217,26 @@ def build_table(token_lists, vocabulary, history):
 
     '''Construct nested output dictionary'''
 
-    history_mapping = {}
+    history_mapping = defaultdict(lambda: defaultdict(int))
     for list in padded_token_list:
         for i in range(len(list) - history):
             new_tuple = tuple(list[i:i+history])
-            dd = history_mapping.setdefault(new_tuple, defaultdict(int))
-            dd[list[i+history]] += 1
-            history_mapping.update({new_tuple: dd})
+            token = list[i+history]
+            history_mapping[new_tuple][token] += 1
     
     return history_mapping
+
+
+    
+    # history_mapping = {}
+    # for list in padded_token_list:
+    #     for i in range(len(list) - history):
+    #         new_tuple = tuple(list[i:i+history])
+    #         dd = history_mapping.setdefault(new_tuple, defaultdict(int))
+    #         dd[list[i+history]] += 1
+    #         history_mapping.update({new_tuple: dd})
+    
+    # return history_mapping
     
 
 def compute_log_probability(tokens,
@@ -264,7 +277,37 @@ def compute_log_probability(tokens,
 
     and we would return 5 as the number of tokens because we attempted to predict A, B, C, <UNK> and </s>.
     '''
-    raise NotImplementedError('TODO')
+
+    '''Pad the input tokens and remove unknown items'''
+
+    padded_token_list = tokens.copy()
+    for index, token in enumerate(padded_token_list):
+        if token not in vocabulary:
+            padded_token_list[index] = "<UNK>"
+
+    for i in range(history):
+        padded_token_list.insert(0, "<s>")
+
+    padded_token_list.append("</s>")
+    
+    '''Compute log probability'''
+
+    sum_log_prob = 0
+    for i in range(history, len(padded_token_list)):
+
+        temp_tuple = tuple(padded_token_list[i-history:i])
+        count = counts[temp_tuple][padded_token_list[i]]
+        
+        count_sum = 0
+        tokens_seen = 0
+
+        for value in counts[temp_tuple].values():
+            count_sum += value
+            tokens_seen += 1
+        
+        sum_log_prob += math.log((count + smoothing_factor) / (count_sum + (smoothing_factor * (len(vocabulary) - tokens_seen))))
+    
+    return math.exp(sum_log_prob)
 
 
 def compute_perplexity(tokens,
@@ -276,8 +319,11 @@ def compute_perplexity(tokens,
 
     This function should be short!! Please call compute_log_probability in this function! My solution calls compute_log_probability, and, based on the output of that function, returns the perplexity in 1-3 lines.
     '''
-    raise NotImplementedError('TODO')
+    probability = compute_log_probability(tokens, counts_table, vocabulary, history)
 
+    Nth_root = -1/(len(tokens) + 1)
+
+    return probability * Nth_root
 
 
 def sample_model(counts_table,
@@ -298,9 +344,9 @@ def main():
     # the full dataset. The limit parameter is to help you debug, because
     # it does take around 30 seconds on my machine to load the whole
     # training corpus.
-    train_lines = load_lines_corpus("test.toks", limit=1000)
-    # train_lines = load_lines_corpus(args.train_tokens, limit=1)
-    val_lines = load_lines_corpus(args.val_tokens, limit=1000)
+    # train_lines = load_lines_corpus("test.toks", limit=10)
+    train_lines = load_lines_corpus(args.train_tokens, limit=1)
+    # val_lines = load_lines_corpus(args.val_tokens, limit=2)
     
     # count the unigrams
     unigram_counts = count_unigrams(train_lines)
@@ -332,7 +378,9 @@ def main():
     
     print("\n ------ \n")
     for h in [1,2,3,4]:
-        print(build_table(train_lines, valid_vocab, h))
+        dictionary = build_table(train_lines, valid_vocab, h)
+        print(compute_log_probability(['i', 'admit', 'that', 'we'], dictionary, valid_vocab, h))
+        print(compute_perplexity(['i', 'admit', 'that', 'we'], dictionary, valid_vocab, h))
         print("\n ------ \n")
         # here, you should create count dictionaries for each history
         # value h \in [1,2,3,4]. For each value of h, you should loop
@@ -341,6 +389,7 @@ def main():
         # perplexity of each language model!
         # raise NotImplementedError('TODO')
             
+    
     
 if __name__ == '__main__':
     main()
