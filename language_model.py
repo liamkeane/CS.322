@@ -295,7 +295,7 @@ def compute_log_probability(tokens,
     sum_log_prob = 0
     for i in range(history, len(padded_token_list)):
 
-        # 
+        # retrieve the history entry and word count (or if it doesn't exist, create that entry)
         temp_tuple = tuple(padded_token_list[i-history:i])
         count = counts[temp_tuple][padded_token_list[i]]
         
@@ -304,6 +304,7 @@ def compute_log_probability(tokens,
         for value in counts[temp_tuple].values():
             count_sum += value
         
+        # add log probability to the sum
         sum_log_prob += math.log((count + smoothing_factor) / (count_sum + (smoothing_factor * len(vocabulary))))
     
     return math.exp(sum_log_prob)
@@ -344,7 +345,7 @@ def main():
     # it does take around 30 seconds on my machine to load the whole
     # training corpus.
     # train_lines = load_lines_corpus("test.toks", limit=10)
-    train_lines = load_lines_corpus(args.train_tokens, limit=1)
+    train_lines = load_lines_corpus(args.train_tokens, limit=100)
     # val_lines = load_lines_corpus(args.val_tokens, limit=2)
     
     # count the unigrams
@@ -378,8 +379,8 @@ def main():
     print("\n ------ \n")
     for h in [1,2,3,4]:
         dictionary = build_table(train_lines, valid_vocab, h)
-        print(compute_log_probability(['i', 'admit', 'that', 'we'], dictionary, valid_vocab, h))
-        print(compute_perplexity(['i', 'admit', 'that', 'we'], dictionary, valid_vocab, h))
+        print(compute_log_probability(['i', 'will', 'never', 'eat', 'oatmeal', 'for', 'breakfast'], dictionary, valid_vocab, h))
+        print(compute_perplexity(['i', 'will', 'never', 'eat', 'oatmeal', 'for', 'breakfast'], dictionary, valid_vocab, h))
         print("\n ------ \n")
         # here, you should create count dictionaries for each history
         # value h \in [1,2,3,4]. For each value of h, you should loop
