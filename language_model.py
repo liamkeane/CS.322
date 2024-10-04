@@ -295,17 +295,16 @@ def compute_log_probability(tokens,
     sum_log_prob = 0
     for i in range(history, len(padded_token_list)):
 
+        # 
         temp_tuple = tuple(padded_token_list[i-history:i])
         count = counts[temp_tuple][padded_token_list[i]]
         
+        # compute the total number of words appearing after the given history
         count_sum = 0
-        tokens_seen = 0
-
         for value in counts[temp_tuple].values():
             count_sum += value
-            tokens_seen += 1
         
-        sum_log_prob += math.log((count + smoothing_factor) / (count_sum + (smoothing_factor * (len(vocabulary) - tokens_seen))))
+        sum_log_prob += math.log((count + smoothing_factor) / (count_sum + (smoothing_factor * len(vocabulary))))
     
     return math.exp(sum_log_prob)
 
