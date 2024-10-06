@@ -87,27 +87,7 @@ def count_unigrams(token_lists):
 def unigram_distribution(token_lists,
                          vocabulary,
                          smoothing_factor=.01):
-    ''' Given a list of token lists and a set of unigrams constituting the vocabulary, return a dictionary mapping from history tuples to a dictionary containing counts of the following word. For example, if vocab={A,B,C,</s>,<UNK>}, and the input corpus is:
-
-    [[A, B, B, A],
-     [B, C],
-     [D]]
-
-    we assume outputs are padded:
-
-    [A, B, B, A, </s>]
-    [B, C, </s>]
-    [D, </s>]
-    
-    Then, the output would be:
-    {A: (2 + smoothing_factor) / N,
-     B: (3 + smoothing_factor) / N,
-     C: (1 + smoothing_factor) / N,
-     <UNK>: (1 + smoothing_factor) / N,
-     </s>: (3 + smoothing_factor) / N,
-    }
-    where N is a normalizing factor that causes the sum of the values in the output dictionary to be 1. Note that <s> has probability zero of being the next word, thus, for our unigram model, we assign it probability zero.
-    '''
+    ''' Given a list of token lists and a set of unigrams constituting the vocabulary, return a dictionary mapping from history tuples to a dictionary containing counts of the following word.'''
 
     unigram_dist = {"<UNK>": 0}
     for list in token_lists:
@@ -137,26 +117,7 @@ def unigram_distribution(token_lists,
 def compute_perplexity_unigrams(tokens,
                                 unigram_dist,
                                 vocabulary):
-    ''' Computes the perplexity of a list of input tokens according to the unigram language model (unigram_dist is the output of the function unigram_distribution).
-
-    If the input tokens are:
-
-    [A, B, C, D]
-
-    with vocab = {A, B, C, </s>, <UNK>}
-
-    [A, B, C, <UNK>, </s>]
-
-    Start computing the P(w_i) at the first non-padding character, and end by computing P(</s>). should be modeled as:
-
-    P(A) * P(B) * P(C) * P(<UNK>) * P(</s>)
-
-    when we take a log of this expression, we get
-
-    log(P(A)) + log(P(B)) + log(P(C)) + log(P(<UNK>)) + log(P(</s>))
-
-    Finally, once you have the summed log probability, use the equation relating probability and perplexity in the reading to compute your final perplexity value!
-    '''
+    ''' Computes the perplexity of a list of input tokens according to the unigram language model (unigram_dist is the output of the function unigram_distribution).'''
 
     sum_log_prob = 0
 
@@ -178,28 +139,7 @@ def compute_perplexity_unigrams(tokens,
 
 
 def build_table(token_lists, vocabulary, history):
-    ''' Given a list of token lists and a set of unigrams constituting the vocabulary, return a dictionary mapping from history tuples to a dictionary containing counts of the following word. For example, if vocab={A,B,C,</s>,<UNK>}, and history=2, the input corpus is:
-
-    [A, B, B, A]
-    [B, C]
-    [D]
-
-    We first pad the inputs and remove unknown vocab items
-
-    [<s>, <s>, A, B, B, A, </s>]
-    [<s>, <s>, B, C, </s>]
-    [<s>, <s>, <UNK>, </s>]
-    
-    Then, part of the nested output dictionary would be:
-    {
-     (<s>, <s>): {A:1, B:1, <UNK>:1},
-     (<s>, A): {B:1},
-     ...
-     (<s>, <UNK>):{</s>:1},
-     ...
-    }
-
-    '''
+    ''' Given a list of token lists and a set of unigrams constituting the vocabulary, return a dictionary mapping from history tuples to a dictionary containing counts of the following word. For example, if vocab={A,B,C,</s>,<UNK>}, and history=2, the input corpus is:'''
     assert history >= 1, 'We only handle nonzero+ histories.'
 
     '''Pad the inputs and remove unknown vocab items'''
@@ -244,27 +184,6 @@ def compute_log_probability(tokens,
     returns:
         log_probability: the logged probability of P(w1, w2, w3 ... </s>)
         n: the number of words in the input that we predicted
-    
-    If the input tokens are:
-
-    [A, B, C, D]
-
-    with vocab = {A, B, C, </s>, <UNK>}
-
-    and history is 2, we first pad the strings and remove unknown vocab items:
-
-    [<s>, <s>, A, B, C, <UNK>, </s>]
-
-    Start computing the P(w_i | history) at the first non-padding character, and end by computing P(</s> | history). For instance, the second sequence's probability, with history = 2, should be modeled as:
-
-    P(A | <s>, <s>) * P(B | A, <s>) ... P(</s> | <UNK>, C)
-
-    when we take a log of this value, we get
-
-    log( P(A | <s>, <s>) * P(B | A, <s>) ... P(</s> | <UNK>, C) )
-    = log( P(A | <s>, <s>) ) + log( P(B | A, <s>) ) ... + log( P(</s> | <UNK>, C) )
-
-    and we would return 5 as the number of tokens because we attempted to predict A, B, C, <UNK> and </s>.
     '''
 
     # Pad the input tokens and remove unknown items
@@ -280,12 +199,6 @@ def compute_log_probability(tokens,
     padded_token_list.append("</s>")
     
     # Compute log probability
-
-    # history == 2
-
-    # [<s>, <s>, the, movie, was, great, </s>]
-
-    # log(Pr(the | <s>, <s>)) + log(Pr(movie | <s>, the)) + log(Pr(was | the, movie)) + log(Pr(great | movie, was))
 
     sum_log_prob = 0
     for i in range(history, len(padded_token_list)):
@@ -310,10 +223,7 @@ def compute_perplexity(tokens,
                        vocabulary,
                        history,
                        smoothing_factor=.01):
-    ''' Computes the perplexity of a list of input tokens according to the n-gram lanuage model parameterized by counts_table.
-
-    This function should be short!! Please call compute_log_probability in this function! My solution calls compute_log_probability, and, based on the output of that function, returns the perplexity in 1-3 lines.
-    '''
+    ''' Computes the perplexity of a list of input tokens according to the n-gram lanuage model parameterized by counts_table.'''
     probability = compute_log_probability(tokens, counts_table, vocabulary, history, smoothing_factor)
 
     Nth_root = -1/(len(tokens) + 1)
@@ -342,7 +252,6 @@ def sample_model(counts_table,
         count_sum = 0
         for value in counts_table[history_tuple].values():
             count_sum += value
-
 
         chosen_token = "<UNK>"
         attempts = 0
@@ -379,12 +288,6 @@ def sample_model(counts_table,
 def main():
     args = parse_args()
 
-    # The limit parameter limits the number of lines that are loaded.
-    # You should remove the limit once you want to test your code on
-    # the full dataset. The limit parameter is to help you debug, because
-    # it does take around 30 seconds on my machine to load the whole
-    # training corpus.
-    # train_lines = load_lines_corpus("test.toks", limit=10)
     train_lines = load_lines_corpus(args.train_tokens)
     val_lines = load_lines_corpus(args.val_tokens)
     
@@ -403,7 +306,7 @@ def main():
                                         valid_vocab,
                                         smoothing_factor=args.smoothing_factor)
 
-    ## Compute perplexities for unigram-only model
+    # Compute perplexities for unigram-only model
     per_line_perplexities = []
     for t in tqdm.tqdm(val_lines):
         perplexity = compute_perplexity_unigrams(t,
@@ -429,15 +332,7 @@ def main():
 
         sample_model(dictionary, valid_vocab, h)
 
-        print("\n ------ \n")
-
-        # here, you should create count dictionaries for each history
-        # value h \in [1,2,3,4]. For each value of h, you should loop
-        # over each line in the validation corpus, and compute its
-        # perplexity. Finally -- print out the average, per-line validation
-        # perplexity of each language model!
-        # raise NotImplementedError('TODO')
-            
+        print("\n ------ \n")            
     
     
 if __name__ == '__main__':
