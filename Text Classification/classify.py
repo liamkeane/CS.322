@@ -1,6 +1,7 @@
 '''
 Starter code for A3
 Assignment modified from one written by Jack Hessel.
+Assignment completed by Liam Keane and Lazuli Kleinhans
 '''
 import argparse
 import nltk
@@ -62,7 +63,21 @@ def classify_doc_with_word_lookup(doc_in,
     You are welcome to play around with the valid_words argument to
     try to make a better hand-designed classifier, if you want!
     '''
-    raise NotImplementedError('TODO')
+    sum_of_valences = 0
+    
+    # loop through all words in doc_in
+    for word in doc_in:
+        # loop through all valid words and their valences
+        for (val_word, valence) in valid_words:
+            # if the word from doc_in is in valid_words, add its valence to the sum
+            if word == val_word:
+                sum_of_valences += valence
+                break
+
+    if sum_of_valences > 0:
+        return 1
+    else:
+        return 0
 
 
 def get_nb_probs(train_docs,
@@ -77,7 +92,39 @@ def get_nb_probs(train_docs,
     n_neg: the number of negative documents 
     '''
 
-    raise NotImplementedError('TODO')
+    n_pos = 0
+    n_neg = 0
+    pos_word_count = 0
+    neg_word_count = 0
+    total_word_count = 0
+    pos_probs = {}
+    neg_probs = {}
+
+    for i in range(len(train_docs)):
+        if train_labels[i] == 0:
+            for word in train_docs[i]:
+                if word not in pos_probs and word not in neg_probs:
+                    total_word_count += 1
+                    
+                pos_word_count += 1
+                pos_probs.update({word: (pos_probs.setdefault(word, smooth) + 1)})
+            n_pos += 1
+        else:
+            for word in train_docs[i]:
+                if word not in pos_probs and word not in neg_probs:
+                    total_word_count += 1
+                    
+                neg_word_count += 1
+                neg_probs.update({word: (neg_probs.setdefault(word, smooth) + 1)})
+            n_neg += 1
+
+
+    # TODO: add the smoothing to the denominators
+    for (word, count) in pos_probs.items():
+        pos_probs.update({word: count/pos_word_count})
+    
+    for (word, count) in neg_probs.items():
+        neg_probs.update({word: count/neg_word_count})
 
     return pos_probs, neg_probs, n_pos, n_neg
     
@@ -130,23 +177,34 @@ def main():
     print('Label statistics, n_pos/n_total: {}/{}'.format(
         np.sum(val_labels==1), len(val_labels)))
 
+    # for v in val_docs:
+    #     result = classify_doc_with_word_lookup(v)
+    #     if result == 0:
+    #         print("Negative")
+    #     else:
+    #         print("Positive")
+
     ## Hand-designed classifier prediction
-    hand_predictions = np.array([classify_doc_with_word_lookup(v, valid_words=[('good', 1),
-                                                                          ('bad', -1),
-                                                                          ('excellent', 1),
-                                                                          ('dissapointing', -1)])
-                                 for v in val_docs])
+    # hand_predictions = np.array([classify_doc_with_word_lookup(v, valid_words=[('good', 1),
+    #                                                                       ('bad', -1),
+    #                                                                       ('excellent', 1),
+    #                                                                       ('dissapointing', -1)])
+    #                              for v in val_docs])
 
-    ## Naive bayes
+    # ## Naive bayes
     pos_probs, neg_probs, n_pos, n_neg = get_nb_probs(train_docs, train_labels)
-    nb_predictions = np.array([classify_doc_with_naive_bayes(d, pos_probs, neg_probs, n_pos, n_neg)
-                               for d in val_docs])
+    # print("Probability of a word appearing given positive:\n", pos_probs)
+    print("Probability of a word appearing given negative:\n", neg_probs)
+    # print("Number of positive documents:", n_pos)
+    print("Number of negative documents:", n_neg)
+    # nb_predictions = np.array([classify_doc_with_naive_bayes(d, pos_probs, neg_probs, n_pos, n_neg)
+    #                            for d in val_docs])
 
-    # NLP folks sometimes multiply metrics by 100 simply for aesthetic reasons
-    print(' & '.join(['{:.2f}'.format(100*f)
-                      for f in get_metrics(val_labels, hand_predictions)]))
-    print(' & '.join(['{:.2f}'.format(100*f)
-                      for f in get_metrics(val_labels, nb_predictions)]))
+    # # NLP folks sometimes multiply metrics by 100 simply for aesthetic reasons
+    # print(' & '.join(['{:.2f}'.format(100*f)
+    #                   for f in get_metrics(val_labels, hand_predictions)]))
+    # print(' & '.join(['{:.2f}'.format(100*f)
+    #                   for f in get_metrics(val_labels, nb_predictions)]))
     
     
 if __name__ == '__main__':
