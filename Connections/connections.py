@@ -281,11 +281,15 @@ def main():
     rand_puzzle = tame_random_puzzle(model)
     print("RAND SEEDED PUZZLE")
     print_puzzle(rand_puzzle, shuffle=False)
+    for i in range(10):
+        # Our puzzle with more bells and whistles
+        good_puzzle_out = good_puzzle(model)
+        print("GOOD PUZZLE")
+        print_puzzle(good_puzzle_out, shuffle=False)
 
-    # Our puzzle with more bells and whistles
-    good_puzzle_out = good_puzzle(model)
-    print("GOOD PUZZLE")
-    print_puzzle(good_puzzle_out, shuffle=False)
+        # Our puzzle with more bells and whistles
+        print("GOOD PUZZLE SUFFLE")
+        print_puzzle(good_puzzle_out, shuffle=True)
 
 if __name__=='__main__':
     main()
