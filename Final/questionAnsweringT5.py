@@ -4,7 +4,6 @@
     Completed by Liam Keane and Lazuli Kleinhans
 '''
 
-# Load model directly
 from transformers import AutoTokenizer, AutoModelForQuestionAnswering
 import json
 
