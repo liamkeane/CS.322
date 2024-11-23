@@ -1,3 +1,8 @@
+'''
+    Benchmarking Question-Answering Implementation
+    Prof. Eric Alexander, Fall 2024
+    Completed by Liam Keane and Lazuli Kleinhans
+'''
 
 # Load model directly
 from transformers import AutoTokenizer, AutoModelForQuestionAnswering
@@ -32,33 +37,33 @@ def build_and_write_predictionary():
     
     predictionary = {}
 
-    # i = 1
-    # for topic in dev_set:
+    i = 1
+    for topic in dev_set:
         
-    #     print("Topic", str(i) + "/" + str(len(dev_set)))
-        # topic_paras = topic["paragraphs"]
-    topic_paras = dev_set[0]["paragraphs"]
-    
-    j = 1
-    for paragraph in topic_paras:
-        print("Document", str(j) + "/" + str(len(topic_paras)))
-        document = paragraph["context"]
+        print("Topic", str(i) + "/" + str(len(dev_set)))
+        topic_paras = topic["paragraphs"]
+    # topic_paras = dev_set[0]["paragraphs"]
+        
+        j = 1
+        for paragraph in topic_paras:
+            print("Document", str(j) + "/" + str(len(topic_paras)))
+            document = paragraph["context"]
 
-        k = 1
-        for question in paragraph["qas"]:
-            print("Q", str(k) + "/" + str(len(paragraph["qas"])))
-            q_text = question["question"]
-            q_id = question["id"]
-            response = get_response(q_text, document)
-            predictionary.update({q_id: response})
-            
-            k += 1
-        j += 1
-        # write predictionary to output file
-        with open('out.json', 'w') as out_file: 
-            out_file.write(json.dumps(predictionary))
+            k = 1
+            for question in paragraph["qas"]:
+                print("Q", str(k) + "/" + str(len(paragraph["qas"])))
+                q_text = question["question"]
+                q_id = question["id"]
+                response = get_response(q_text, document)
+                predictionary.update({q_id: response})
                 
-    # i += 1
+                k += 1
+            j += 1
+            # write predictionary to output file
+            with open('out.json', 'w') as out_file: 
+                out_file.write(json.dumps(predictionary))
+                
+        i += 1
                 
 
 def main():
