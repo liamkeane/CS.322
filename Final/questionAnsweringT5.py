@@ -63,6 +63,9 @@ def build_and_write_predictionary():
                 out_file.write(json.dumps(predictionary))
                 
         i += 1
+        
+        if i >= 9:
+            break
                 
 
 def main():
