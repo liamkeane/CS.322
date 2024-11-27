@@ -30,8 +30,6 @@ python3 questionAnsweringBERT.py
 python3 questionAsnweringT5.py
 ```
 
-
-
 ### Benchmarking:
 
 Beginning with our human heuistic, simply run the following command to begin the command line tool.
